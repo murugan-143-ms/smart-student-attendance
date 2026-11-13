@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}Database Settings{% endblock %}
+{% block page_title %}Database Configuration & MySQL Engine Manager{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+    <!-- Active Engine Status Card -->
+    <div class="card mb-4 border-primary">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <span class="fw-bold"><i class="bi bi-hdd-network-fill me-2"></i>Active Database Engine Status</span>
+            <span class="badge bg-light text-primary fw-bold">{{ db_info.status }}</span>
+        </div>
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h5 class="fw-bold text-dark mb-1">{{ db_info.type }}</h5>
+                    <p class="text-muted small mb-2">
+                        <strong>Host / Location:</strong> {{ db_info.host }} &bull;
+                        <strong>Active Database:</strong> {{ db_info.database }}
+                    </p>
+                    {% if db_info.mysql_note %}
+                    <div class="alert alert-info py-2 small mb-0">
+                        <i class="bi bi-info-circle me-1"></i>
+                        {{ db_info.mysql_note }}
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                    <span class="badge {% if 'MySQL' in db_info.type %}bg-success{% else %}bg-primary{% endif %} p-2 fs-6">
+                        <i class="bi bi-check-circle me-1"></i> System Fully Operational
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MySQL Connection Tester & Seeder -->
+    <div class="row g-4 mb-4">
+        <!-- MySQL Server Setup Form -->
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header fw-bold bg-light">
+                    <i class="bi bi-shield-lock me-2 text-primary"></i>MySQL 8.0 Connection Parameters
+                </div>
+                <div class="card-body">
+                    <p class="small text-muted mb-3">
+                        Enter your local MySQL credentials (e.g. root and your password) to test connectivity:
+                    </p>
+
+                    <form id="mysqlTestForm">
+                        <div class="row g-2 mb-3">
+                            <div class="col-8">
+                                <label class="form-label small fw-semibold">MySQL Host</label>
+                                <input type="text" id="db_host" name="host" class="form-control" value="{{ config.DB_HOST }}">
+                            </div>
+                            <div class="col-4">
+                                <label class="form-label small fw-semibold">Port</label>
+                                <input type="number" id="db_port" name="port" class="form-control" value="{{ config.DB_PORT }}">
+                            </div>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label small fw-semibold">Username</label>
+                                <input type="text" id="db_user" name="user" class="form-control" value="{{ config.DB_USER }}">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-semibold">Password</label>
+                                <input type="password" id="db_password" name="password" class="form-control" placeholder="MySQL root password" value="{{ config.DB_PASSWORD }}">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold">Database Name</label>
+                            <input type="text" id="db_name" name="database" class="form-control" value="{{ config.DB_NAME }}">
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-outline-primary flex-grow-1" onclick="testConnection()">
+                                <i class="bi bi-broadcast me-1"></i> Test Connection
+                            </button>
+                        </div>
+                    </form>
+
+                    <div id="testResultAlert" class="alert mt-3 py-2 small" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MySQL Workbench Instructions & SQL Execution -->
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header fw-bold bg-light">
+                    <i class="bi bi-terminal me-2 text-success"></i>Direct MySQL Workbench Setup
+                </div>
+                <div class="card-body">
+                    <p class="small text-muted mb-3">
+                        The complete SQL script <code>database.sql</code> is ready in the project root directory. You can load it directly into MySQL Workbench:
+                    </p>
+
+                    <ol class="small text-muted ps-3 mb-3">
+                        <li class="mb-2">Open <strong>MySQL Workbench 8.0 CE</strong> on your computer.</li>
+                        <li class="mb-2">Connect to your Local Instance (<code>localhost:3306</code>).</li>
+                        <li class="mb-2">Click <strong>File &rarr; Open SQL Script...</strong> and select:
+                            <code class="d-block mt-1 p-1 bg-light border text-dark font-monospace">database.sql</code>
+                        </li>
+                        <li class="mb-2">Click the <strong>Execute (Lightning Bolt)</strong> button to create all 10 tables, views, procedures, triggers, and sample records!</li>
+                    </ol>
+
+                    <div class="p-3 bg-light rounded border text-center">
+                        <form method="POST" action="{{ url_for('settings.init_mysql') }}">
+                            <input type="hidden" name="host" id="seed_host" value="{{ config.DB_HOST }}">
+                            <input type="hidden" name="port" id="seed_port" value="{{ config.DB_PORT }}">
+                            <input type="hidden" name="user" id="seed_user" value="{{ config.DB_USER }}">
+                            <input type="hidden" name="password" id="seed_password" value="{{ config.DB_PASSWORD }}">
+                            <button type="submit" class="btn btn-success w-100" onclick="copySeedCredentials()">
+                                <i class="bi bi-box-arrow-in-down me-1"></i> Auto-Seed MySQL Database from App
+                            </button>
+                        </form>
+                        <small class="text-muted d-block mt-2">Executes all DDL and DML statements automatically.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function testConnection() {
+    const alertBox = document.getElementById('testResultAlert');
+    alertBox.style.display = 'block';
+    alertBox.className = 'alert alert-info py-2 small';
+    alertBox.innerText = 'Testing connection to MySQL Server...';
+
+    const formData = new FormData(document.getElementById('mysqlTestForm'));
+
+    fetch("{{ url_for('settings.test_mysql') }}", {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alertBox.className = 'alert alert-success py-2 small';
+            alertBox.innerText = data.message;
+        } else {
+            alertBox.className = 'alert alert-danger py-2 small';
+            alertBox.innerText = data.message;
+        }
+    })
+    .catch(err => {
+        alertBox.className = 'alert alert-danger py-2 small';
+        alertBox.innerText = 'Request error: ' + err;
+    });
+}
+
+function copySeedCredentials() {
+    document.getElementById('seed_host').value = document.getElementById('db_host').value;
+    document.getElementById('seed_port').value = document.getElementById('db_port').value;
+    document.getElementById('seed_user').value = document.getElementById('db_user').value;
+    document.getElementById('seed_password').value = document.getElementById('db_password').value;
+}
+</script>
+{% endblock %}
+

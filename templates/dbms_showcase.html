@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+
+{% block title %}DBMS Concepts Showcase{% endblock %}
+{% block page_title %}DBMS Concepts & Relational Architecture Showcase{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+    <!-- Header Banner -->
+    <div class="card mb-4 bg-dark text-white border-0 shadow">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h4 class="fw-bold mb-1 text-white"><i class="bi bi-database-fill-gear text-primary me-2"></i>Database Management System Architecture</h4>
+                    <p class="text-secondary mb-0 small">
+                        Third-Year Computer Science Project Demonstration Suite &bull; MySQL 8.0 &bull; Relational Theory & Execution
+                    </p>
+                </div>
+                <div class="text-end">
+                    <span class="badge bg-primary px-3 py-2 fs-6">3NF / BCNF Normalized</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Query Inspector Console -->
+    <div class="card mb-4 border-primary">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <span class="fw-bold"><i class="bi bi-terminal-fill me-2"></i>Interactive SQL Query Execution Terminal</span>
+            <span class="badge bg-light text-primary">Live Database Query Runner</span>
+        </div>
+        <div class="card-body">
+            <p class="small text-muted mb-3">
+                Select any DBMS concept below to load its SQL statement into this live console, or click <strong>Execute Live Query</strong> to fetch real records directly from the database.
+            </p>
+            <div class="bg-dark p-3 rounded font-monospace text-light mb-3 position-relative" style="min-height: 90px;">
+                <pre id="sqlQueryDisplay" class="mb-0 text-info" style="font-size: 0.88rem; white-space: pre-wrap;">SELECT * FROM students LIMIT 5;</pre>
+            </div>
+            <div class="d-flex justify-content-between align-items-center">
+                <span id="queryStatusText" class="small text-muted">Ready to execute query</span>
+                <button type="button" class="btn btn-success" id="btnExecuteQuery" onclick="executeCurrentConcept()">
+                    <i class="bi bi-play-fill me-1"></i> Execute Live Query
+                </button>
+            </div>
+
+            <!-- Dynamic Result Table Area -->
+            <div id="queryResultArea" class="mt-3 table-responsive" style="display: none; max-height: 250px; overflow-y: auto;">
+                <table class="table table-sm table-bordered table-striped" id="queryResultTable">
+                    <thead class="table-dark" id="queryResultHeader"></thead>
+                    <tbody id="queryResultBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- SQL Concepts Grid -->
+    <h5 class="fw-bold text-dark mb-3"><i class="bi bi-collection-fill me-2 text-primary"></i>Implemented DBMS Concepts</h5>
+    <div class="row g-3 mb-5">
+        {% for c in concepts %}
+        <div class="col-lg-6">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center bg-light">
+                    <span class="fw-bold text-dark">{{ c.title }}</span>
+                    <span class="badge bg-secondary-subtle text-secondary">{{ c.category }}</span>
+                </div>
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <p class="small text-muted mb-2">{{ c.description }}</p>
+                    <div class="bg-light p-2 rounded border font-monospace small mb-3 text-secondary" style="font-size: 0.8rem; max-height: 120px; overflow-y: auto;">
+                        <pre class="mb-0">{{ c.sql }}</pre>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary w-100" onclick="loadConcept('{{ c.id }}', `{{ c.sql }}`, '{{ c.title }}')">
+                        <i class="bi bi-box-arrow-up-right me-1"></i> Load & Execute Query
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Advanced Programmability: Stored Procedures, Functions, Triggers, Views -->
+    <h5 class="fw-bold text-dark mb-3"><i class="bi bi-code-slash me-2 text-primary"></i>Advanced SQL Programmability & Logic</h5>
+    <div class="row g-3 mb-5">
+        <!-- Stored Procedures -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-light fw-bold">
+                    <i class="bi bi-gear-fill me-2 text-primary"></i>1. Stored Procedures with Error Handlers
+                </div>
+                <div class="card-body">
+                    <p class="small text-muted">Demonstrates stored procedure <code>sp_record_attendance</code> with condition handlers for duplicate keys and SQL exceptions:</p>
+                    <pre class="bg-dark text-success p-3 rounded font-monospace small" style="font-size: 0.78rem;">CREATE PROCEDURE sp_record_attendance(
+    IN p_student_id INT, IN p_course_id INT,
+    IN p_date DATE, IN p_status VARCHAR(10),
+    IN p_remarks VARCHAR(255), OUT p_result VARCHAR(50)
+)
+BEGIN
+    DECLARE duplicate_entry CONDITION FOR 1062;
+    DECLARE EXIT HANDLER FOR duplicate_entry
+    BEGIN
+        UPDATE attendance SET status = p_status, remarks = p_remarks
+        WHERE student_id = p_student_id AND course_id = p_course_id 
+          AND attendance_date = p_date;
+        SET p_result = 'UPDATED_EXISTING';
+    END;
+    INSERT INTO attendance (student_id, course_id, attendance_date, status, remarks)
+    VALUES (p_student_id, p_course_id, p_date, p_status, p_remarks);
+    SET p_result = 'RECORDED_SUCCESS';
+END;</pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Triggers -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-light fw-bold">
+                    <i class="bi bi-lightning-charge-fill me-2 text-warning"></i>2. Automated Calculation Triggers
+                </div>
+                <div class="card-body">
+                    <p class="small text-muted">Demonstrates <code>BEFORE INSERT</code> and <code>BEFORE UPDATE</code> triggers calculating total marks, percentage, and assigning grades:</p>
+                    <pre class="bg-dark text-warning p-3 rounded font-monospace small" style="font-size: 0.78rem;">CREATE TRIGGER trg_before_performance_insert
+BEFORE INSERT ON performances
+FOR EACH ROW
+BEGIN
+    SET NEW.total_marks = NEW.internal_marks + NEW.assignment_marks + NEW.exam_marks;
+    SET NEW.percentage = ROUND(NEW.total_marks, 2);
+    SET NEW.grade = fn_get_letter_grade(NEW.percentage);
+    
+    IF NEW.percentage < 50.00 THEN
+        SET NEW.remarks = 'Needs Academic Improvement';
+    ELSEIF NEW.percentage >= 85.00 THEN
+        SET NEW.remarks = 'Excellent Academic Standing';
+    ELSE
+        SET NEW.remarks = 'Satisfactory Progress';
+    END IF;
+END;</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Database Normalization Section -->
+    <div class="card mb-4">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <span class="fw-bold"><i class="bi bi-check2-circle text-success me-2"></i>Database Normalization Verification (1NF to 5NF)</span>
+            <span class="badge bg-success">Normalized Schema</span>
+        </div>
+        <div class="card-body">
+            <div class="accordion" id="normalizationAccordion">
+                <!-- 1NF -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse1NF">
+                            <strong>First Normal Form (1NF) &bull; Atomic Values & No Repeating Groups</strong>
+                        </button>
+                    </h2>
+                    <div id="collapse1NF" class="accordion-collapse collapse show">
+                        <div class="accordion-body small">
+                            <p class="mb-1"><strong>Requirement:</strong> Each attribute contains atomic (indivisible) values, and each record is identified by a Primary Key.</p>
+                            <p class="mb-0 text-success"><i class="bi bi-check-circle-fill me-1"></i><strong>Fulfilled:</strong> Student records store single-valued attributes (e.g. <code>register_number</code>, <code>email</code>). Multiple attendance dates or exam scores are normalized into dedicated rows in child tables (<code>attendance</code> and <code>performances</code>), eliminating repeating groups.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2NF -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse2NF">
+                            <strong>Second Normal Form (2NF) &bull; Elimination of Partial Functional Dependencies</strong>
+                        </button>
+                    </h2>
+                    <div id="collapse2NF" class="accordion-collapse collapse">
+                        <div class="accordion-body small">
+                            <p class="mb-1"><strong>Requirement:</strong> Must be in 1NF, and all non-key attributes must be fully functionally dependent on the entire primary key (no partial dependency on part of a composite key).</p>
+                            <p class="mb-0 text-success"><i class="bi bi-check-circle-fill me-1"></i><strong>Fulfilled:</strong> All tables use surrogate single-column integer Primary Keys (<code>student_id</code>, <code>course_id</code>, <code>performance_id</code>). Non-key attributes depend on the full primary key.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3NF -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse3NF">
+                            <strong>Third Normal Form (3NF) &bull; Elimination of Transitive Dependencies</strong>
+                        </button>
+                    </h2>
+                    <div id="collapse3NF" class="accordion-collapse collapse">
+                        <div class="accordion-body small">
+                            <p class="mb-1"><strong>Requirement:</strong> Must be in 2NF, and no non-key attribute is transitively dependent on the primary key ($X \rightarrow Y \rightarrow Z$).</p>
+                            <p class="mb-0 text-success"><i class="bi bi-check-circle-fill me-1"></i><strong>Fulfilled:</strong> Department details (<code>dept_name</code>, <code>dept_code</code>) are extracted into their own table (<code>departments</code>). The <code>students</code> and <code>courses</code> tables only store foreign key <code>dept_id</code>, eliminating transitive dependencies.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BCNF / 4NF / 5NF -->
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseHigherNF">
+                            <strong>Boyce-Codd (BCNF), 4NF & 5NF &bull; Advanced Relational Integrity</strong>
+                        </button>
+                    </h2>
+                    <div id="collapseHigherNF" class="accordion-collapse collapse">
+                        <div class="accordion-body small">
+                            <p class="mb-1"><strong>BCNF:</strong> For every non-trivial functional dependency $X \rightarrow Y$, $X$ is a superkey.</p>
+                            <p class="mb-1"><strong>4NF:</strong> No multi-valued dependencies ($A \twoheadrightarrow B$) exist. Student attendance and examination marks are decoupled into distinct independent relational paths.</p>
+                            <p class="mb-0"><strong>5NF (Join Dependency Normal Form):</strong> Tables cannot be decomposed into smaller tables without loss of relational meaning.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentActiveConceptId = 'dql_select';
+
+function loadConcept(conceptId, sqlText, title) {
+    currentActiveConceptId = conceptId;
+    document.getElementById('sqlQueryDisplay').innerText = sqlText;
+    document.getElementById('queryStatusText').innerText = 'Loaded query: ' + title;
+    executeCurrentConcept();
+}
+
+function executeCurrentConcept() {
+    const statusText = document.getElementById('queryStatusText');
+    const resultArea = document.getElementById('queryResultArea');
+    const tableHeader = document.getElementById('queryResultHeader');
+    const tableBody = document.getElementById('queryResultBody');
+
+    statusText.innerText = 'Executing query on database...';
+
+    fetch("{{ url_for('dbms.execute_query') }}", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ concept_id: currentActiveConceptId })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (!data.success) {
+            statusText.innerText = 'Error: ' + data.error;
+            resultArea.style.display = 'none';
+            return;
+        }
+
+        statusText.innerText = `Query executed successfully! (${data.row_count} rows returned)`;
+        
+        // Render table
+        tableHeader.innerHTML = '';
+        tableBody.innerHTML = '';
+
+        if (data.results.length > 0) {
+            const columns = Object.keys(data.results[0]);
+            let headerRow = '<tr>';
+            columns.forEach(col => { headerRow += `<th>${col}</th>`; });
+            headerRow += '</tr>';
+            tableHeader.innerHTML = headerRow;
+
+            data.results.forEach(row => {
+                let rowHtml = '<tr>';
+                columns.forEach(col => {
+                    rowHtml += `<td>${row[col] !== null ? row[col] : '-'}</td>`;
+                });
+                rowHtml += '</tr>';
+                tableBody.innerHTML += rowHtml;
+            });
+            resultArea.style.display = 'block';
+        } else {
+            resultArea.style.display = 'none';
+            statusText.innerText = 'Query returned 0 rows.';
+        }
+    })
+    .catch(err => {
+        statusText.innerText = 'Network error: ' + err;
+    });
+}
+</script>
+{% endblock %}
+

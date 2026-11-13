@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Academic Reports{% endblock %}
+{% block page_title %}Academic Reports & Official Transcripts{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+    <!-- Top Action Bar -->
+    <div class="card mb-4">
+        <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <h5 class="fw-bold mb-1">Administrative & Academic Report Center</h5>
+                <small class="text-muted">Generate official transcripts, detention notices, and ranking summaries.</small>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('reports.export_csv') }}" class="btn btn-outline-success">
+                    <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export Master Dataset (CSV)
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generate Student Report Card Selector -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <span class="fw-bold"><i class="bi bi-person-vcard me-2"></i>Generate Individual Student Academic Report Card</span>
+        </div>
+        <div class="card-body">
+            <div class="row align-items-end g-3">
+                <div class="col-md-8">
+                    <label class="form-label small fw-semibold">Select Student by Register Number or Name:</label>
+                    <select id="selectedStudentSelect" class="form-select">
+                        {% for s in students %}
+                        <option value="{{ s.student_id }}">{{ s.register_number }} - {{ s.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <button type="button" class="btn btn-primary w-100" onclick="openStudentReport()">
+                        <i class="bi bi-printer me-1"></i> View & Print Report Card
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Two Reports Grid: Low Attendance Detained List & Top Rankers -->
+    <div class="row g-4 mb-4">
+        <!-- Low Attendance Detention List -->
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header bg-danger-subtle text-danger border-danger-subtle d-flex justify-content-between align-items-center">
+                    <span class="fw-bold"><i class="bi bi-shield-exclamation me-2"></i>Official Low Attendance Detention List (< 75%)</span>
+                    <span class="badge bg-danger">{{ low_att_records|length }} Students</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Register No</th>
+                                <th>Student Name</th>
+                                <th>Dept</th>
+                                <th>Attendance %</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in low_att_records %}
+                            <tr>
+                                <td><span class="font-monospace text-primary fw-semibold">{{ r.register_number }}</span></td>
+                                <td>{{ r.name }}</td>
+                                <td><span class="badge bg-light text-dark border">{{ r.dept_code }}</span></td>
+                                <td><strong class="text-danger">{{ r.attendance_pct }}%</strong></td>
+                                <td><span class="badge bg-danger">Detained</span></td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center py-3 text-muted">All students meet the 75% attendance criterion.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Academic Achievers -->
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header bg-success-subtle text-success border-success-subtle d-flex justify-content-between align-items-center">
+                    <span class="fw-bold"><i class="bi bi-trophy-fill me-2"></i>College Academic Merit Rank List</span>
+                    <span class="badge bg-success">Top Rankers</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Rank</th>
+                                <th>Register No</th>
+                                <th>Student Name</th>
+                                <th>Dept</th>
+                                <th>Avg Marks</th>
+                                <th>Attendance</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in top_rankers %}
+                            <tr>
+                                <td>
+                                    <span class="badge {% if loop.index == 1 %}bg-warning text-dark{% elif loop.index == 2 %}bg-secondary text-white{% elif loop.index == 3 %}bg-danger-subtle text-danger border{% else %}bg-light text-dark border{% endif %}">
+                                        #{{ loop.index }}
+                                    </span>
+                                </td>
+                                <td><span class="font-monospace text-primary fw-semibold">{{ r.register_number }}</span></td>
+                                <td>{{ r.name }}</td>
+                                <td><span class="badge bg-light text-dark border">{{ r.dept_code }}</span></td>
+                                <td><strong class="text-success">{{ r.average_marks }}/100</strong></td>
+                                <td>{{ r.attendance_percentage }}%</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center py-3 text-muted">No ranking data recorded yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Department Summary Table -->
+    <div class="card">
+        <div class="card-header">
+            <span class="fw-bold"><i class="bi bi-building text-primary me-2"></i>Department Consolidated Performance Audit</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Department</th>
+                        <th>Department Name</th>
+                        <th>Enrolled Students</th>
+                        <th>Average Attendance</th>
+                        <th>Average Academic Marks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in dept_summaries %}
+                    <tr>
+                        <td><strong class="text-primary">{{ d.dept_code }}</strong></td>
+                        <td>{{ d.dept_name }}</td>
+                        <td>{{ d.total_students }}</td>
+                        <td>
+                            <span class="badge {% if d.dept_avg_attendance >= 75 %}bg-success-subtle text-success border border-success-subtle{% else %}bg-danger-subtle text-danger border border-danger-subtle{% endif %}">
+                                {{ d.dept_avg_attendance }}%
+                            </span>
+                        </td>
+                        <td><strong class="text-dark">{{ d.dept_avg_marks }}/100</strong></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openStudentReport() {
+    const studentId = document.getElementById('selectedStudentSelect').value;
+    if (studentId) {
+        window.open("{{ url_for('reports.index') }}/student-card/" + studentId, '_blank');
+    }
+}
+</script>
+{% endblock %}
+

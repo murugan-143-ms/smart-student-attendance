@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block title %}{{ student.name }} - Profile{% endblock %}
+{% block page_title %}Student Academic Dossier{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <a href="{{ url_for('students.index') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i> Back to Student Directory
+        </a>
+        <a href="{{ url_for('reports.student_card', student_id=student.student_id) }}" target="_blank"
+            class="btn btn-primary btn-sm">
+            <i class="bi bi-printer me-1"></i> Print Official Report Card
+        </a>
+    </div>
+
+    <!-- Student Bio Header Card -->
+    <div class="card mb-4">
+        <div class="card-body p-4">
+            <div class="row align-items-center">
+                <div class="col-auto">
+                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center"
+                        style="width: 72px; height: 72px; font-size: 2rem; font-weight: bold;">
+                        {{ student.name[:1] }}
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="d-flex align-items-center gap-2">
+                        <h4 class="mb-0 fw-bold">{{ student.name }}</h4>
+                        {% if overall_att_pct >= 75 %}
+                        <span class="badge bg-success">Eligible for Exams</span>
+                        {% else %}
+                        <span class="badge bg-danger">Detained / Low Attendance</span>
+                        {% endif %}
+                    </div>
+                    <div class="text-muted mt-1 small">
+                        <span><strong class="text-dark">Register No:</strong> {{ student.register_number }}</span>
+                        &bull;
+                        <span><strong class="text-dark">Department:</strong> {{ student.dept_name }} ({{
+                            student.dept_code }})</span> &bull;
+                        <span><strong class="text-dark">Year / Sem:</strong> Year {{ student.year }}, Sem {{
+                            student.semester }} (Sec {{ student.section }})</span>
+                    </div>
+                    <div class="text-muted small mt-1">
+                        <span><i class="bi bi-envelope me-1"></i>{{ student.email }}</span> &bull;
+                        <span><i class="bi bi-telephone me-1"></i>{{ student.phone or 'N/A' }}</span> &bull;
+                        <span><strong class="text-dark">Gender:</strong> {{ student.gender }}</span>
+                    </div>
+                </div>
+
+                <div class="col-auto text-end">
+                    <div class="p-3 bg-light rounded border text-center">
+                        <small class="text-muted d-block text-uppercase fw-semibold" style="font-size: 0.75rem;">Overall
+                            Attendance</small>
+                        <h3
+                            class="fw-bold mb-0 {% if overall_att_pct >= 75 %}text-success{% else %}text-danger{% endif %}">
+                            {{ overall_att_pct }}%</h3>
+                        <div class="progress mt-2" style="width: 110px; height: 6px;">
+                            <div class="progress-bar {% if overall_att_pct >= 75 %}bg-success{% else %}bg-danger{% endif %}"
+                                style="width: {{ overall_att_pct }}%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Two Columns: Attendance Summary & Academic Marks -->
+    <div class="row g-4">
+        <!-- Attendance Breakdown -->
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="fw-bold"><i class="bi bi-calendar-check text-primary me-2"></i>Subject-Wise Attendance
+                        Breakdown</span>
+                    <span class="badge bg-light text-dark border">{{ att_summary|length }} Subjects</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Course</th>
+                                <th>Sessions</th>
+                                <th>Attended</th>
+                                <th>Absent</th>
+                                <th>Percentage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for att in att_summary %}
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">{{ att.course_code }}</div>
+                                    <small class="text-muted">{{ att.course_name }}</small>
+                                </td>
+                                <td>{{ att.total_sessions }}</td>
+                                <td><span class="text-success fw-bold">{{ att.present_count }}</span></td>
+                                <td><span class="text-danger fw-bold">{{ att.absent_count }}</span></td>
+                                <td>
+                                    <span
+                                        class="badge {% if (att.percentage or 0) >= 75 %}bg-success-subtle text-success border border-success-subtle{% else %}bg-danger-subtle text-danger border border-danger-subtle{% endif %}">
+                                        {{ att.percentage or 0.0 }}%
+                                    </span>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center py-3 text-muted">No attendance sessions registered
+                                    for courses.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Academic Performance Marks -->
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="fw-bold"><i class="bi bi-journal-check text-success me-2"></i>Examination Marks &
+                        Grades</span>
+                    <span class="badge bg-primary">GPA Average: {{ avg_marks }}/100</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Exam / Course</th>
+                                <th>IA (30)</th>
+                                <th>Assgn (20)</th>
+                                <th>Exam (50)</th>
+                                <th>Total (100)</th>
+                                <th>Grade</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in performances %}
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">{{ p.course_code }}</div>
+                                    <small class="text-muted">{{ p.exam_name }}</small>
+                                </td>
+                                <td>{{ p.internal_marks }}</td>
+                                <td>{{ p.assignment_marks }}</td>
+                                <td>{{ p.exam_marks }}</td>
+                                <td><strong class="text-dark">{{ p.total_marks }}</strong></td>
+                                <td>
+                                    <span
+                                        class="badge badge-grade-{{ p.grade.lower().replace('+', 'p') }} fw-bold px-2 py-1">
+                                        {{ p.grade }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center py-3 text-muted">No examination marks entered yet.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Attendance Log -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <span class="fw-bold"><i class="bi bi-clock-history me-2 text-secondary"></i>Detailed Daily
+                        Attendance Sessions</span>
+                </div>
+                <div class="table-responsive" style="max-height: 280px; overflow-y: auto;">
+                    <table class="table table-sm table-striped align-middle mb-0">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th>Session Date</th>
+                                <th>Course</th>
+                                <th>Status</th>
+                                <th>Faculty Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for rec in attendance_records %}
+                            <tr>
+                                <td>{{ rec.attendance_date }}</td>
+                                <td>{{ rec.course_code }} - {{ rec.course_name }}</td>
+                                <td>
+                                    {% if rec.status == 'Present' %}
+                                    <span class="badge bg-success-subtle text-success"><i
+                                            class="bi bi-check-circle me-1"></i>Present</span>
+                                    {% else %}
+                                    <span class="badge bg-danger-subtle text-danger"><i
+                                            class="bi bi-x-circle me-1"></i>Absent</span>
+                                    {% endif %}
+                                </td>
+                                <td><small class="text-muted">{{ rec.remarks or '-' }}</small></td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center py-3 text-muted">No attendance logs available.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

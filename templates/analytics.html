@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block title %}Performance Analytics & Data Science{% endblock %}
+{% block page_title %}Predictive Analytics & Correlation Engine{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+    <!-- Top Statistical Metric Strip -->
+    <div class="row g-3 mb-4">
+        <!-- Pearson Correlation -->
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card">
+                <span class="stat-lbl d-block mb-1">Pearson Correlation (r)</span>
+                <span class="stat-val text-primary">{{ corr.correlation }}</span>
+                <span class="badge bg-primary-subtle text-primary mt-2">
+                    {% if corr.correlation >= 0.8 %}Very Strong Positive{% elif corr.correlation >= 0.5 %}Strong Positive{% else %}Moderate{% endif %}
+                </span>
+            </div>
+        </div>
+
+        <!-- R-Squared -->
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card">
+                <span class="stat-lbl d-block mb-1">Determination (R²)</span>
+                <span class="stat-val text-success">{{ corr.r_squared }}</span>
+                <span class="badge bg-success-subtle text-success mt-2">
+                    {{ (corr.r_squared * 100)|round(1) }}% Variance Explained
+                </span>
+            </div>
+        </div>
+
+        <!-- Regression Slope -->
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card">
+                <span class="stat-lbl d-block mb-1">Regression Slope (m)</span>
+                <span class="stat-val text-indigo">+{{ corr.slope }}</span>
+                <span class="badge bg-indigo-subtle text-indigo mt-2">Marks / 1% Attendance</span>
+            </div>
+        </div>
+
+        <!-- Regression Equation -->
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card">
+                <span class="stat-lbl d-block mb-1">Prediction Formula</span>
+                <span class="stat-val font-monospace fs-5 text-dark mt-1">y = {{ corr.slope }}x + {{ corr.intercept }}</span>
+                <span class="badge bg-secondary-subtle text-secondary mt-2">NumPy Polyfit (1st Order)</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI/Pandas Insights Box -->
+    <div class="card mb-4 border-primary border-opacity-25 bg-primary-subtle bg-opacity-10">
+        <div class="card-body p-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-primary text-white rounded p-3">
+                    <i class="bi bi-cpu-fill fs-3"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold text-primary mb-1">Automated Statistical Analysis & Insights (NumPy / Pandas Engine)</h6>
+                    <p class="mb-0 text-dark small">{{ corr.interpretation }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Analytics Graph: Scatter Plot with Linear Regression Line -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+                <span class="fw-bold"><i class="bi bi-scatter-chart text-primary me-2"></i>Attendance % vs Academic Marks Scatter Plot & Trend Line</span>
+                <span class="badge bg-light text-dark border ms-2">Chart.js Scatter + Linear Regression</span>
+            </div>
+            <span class="small text-muted">Hover points to see student name & register number</span>
+        </div>
+        <div class="card-body">
+            <div style="height: 380px; position: relative;">
+                <canvas id="scatterRegressionChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4 Cohort Matrix / Quadrant Breakdown -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <span class="fw-bold"><i class="bi bi-grid-fill text-indigo me-2"></i>Performance Quadrant Matrix Classification</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="row g-0">
+                <!-- Q1: Star Performers -->
+                <div class="col-md-6 border-end border-bottom p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold text-success d-flex align-items-center gap-2">
+                            <i class="bi bi-stars"></i> Quadrant 1: High Attendance (>=75%) & High Marks (>=75%)
+                        </span>
+                        <span class="badge bg-success">{{ quadrants.summary.q1_count }} Students</span>
+                    </div>
+                    <small class="text-muted d-block mb-3">Model students: Regular classroom participation directly reflecting academic distinction.</small>
+                    <div style="max-height: 180px; overflow-y: auto;">
+                        <ul class="list-group list-group-flush small">
+                            {% for s in quadrants.q1 %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-1">
+                                <span><strong>{{ s.student_name }}</strong> ({{ s.register_number }})</span>
+                                <span>Att: <strong class="text-success">{{ s.attendance_pct }}%</strong> | Marks: <strong class="text-primary">{{ s.avg_marks }}</strong></span>
+                            </li>
+                            {% else %}
+                            <li class="list-group-item text-muted">None in this cohort</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Q2: Struggling Diligent -->
+                <div class="col-md-6 border-bottom p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold text-warning d-flex align-items-center gap-2">
+                            <i class="bi bi-person-exclamation"></i> Quadrant 2: High Attendance (>=75%) & Low Marks (<50%)
+                        </span>
+                        <span class="badge bg-warning text-dark">{{ quadrants.summary.q2_count }} Students</span>
+                    </div>
+                    <small class="text-muted d-block mb-3">Diligent attender needing academic mentoring and remedial tutorials to bridge learning gaps.</small>
+                    <div style="max-height: 180px; overflow-y: auto;">
+                        <ul class="list-group list-group-flush small">
+                            {% for s in quadrants.q2 %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-1">
+                                <span><strong>{{ s.student_name }}</strong> ({{ s.register_number }})</span>
+                                <span>Att: <strong class="text-success">{{ s.attendance_pct }}%</strong> | Marks: <strong class="text-danger">{{ s.avg_marks }}</strong></span>
+                            </li>
+                            {% else %}
+                            <li class="list-group-item text-muted">No students currently in this group.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Q3: Critical At-Risk -->
+                <div class="col-md-6 border-end p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold text-danger d-flex align-items-center gap-2">
+                            <i class="bi bi-shield-x"></i> Quadrant 3: Low Attendance (<75%) & Low Marks (<50%)
+                        </span>
+                        <span class="badge bg-danger">{{ quadrants.summary.q3_count }} Students</span>
+                    </div>
+                    <small class="text-muted d-block mb-3">Critical risk: Chronic absenteeism correlating with severe examination failure risk.</small>
+                    <div style="max-height: 180px; overflow-y: auto;">
+                        <ul class="list-group list-group-flush small">
+                            {% for s in quadrants.q3 %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-1">
+                                <span><strong>{{ s.student_name }}</strong> ({{ s.register_number }})</span>
+                                <span>Att: <strong class="text-danger">{{ s.attendance_pct }}%</strong> | Marks: <strong class="text-danger">{{ s.avg_marks }}</strong></span>
+                            </li>
+                            {% else %}
+                            <li class="list-group-item text-muted">No students currently in this group.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Q4: Fast Learners / Attendance Risk -->
+                <div class="col-md-6 p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold text-info d-flex align-items-center gap-2">
+                            <i class="bi bi-lightbulb"></i> Quadrant 4: Low Attendance (<75%) & High Marks (>=75%)
+                        </span>
+                        <span class="badge bg-info text-dark">{{ quadrants.summary.q4_count }} Students</span>
+                    </div>
+                    <small class="text-muted d-block mb-3">Aptitude strong but requires attendance compliance warning to avoid university exam detention.</small>
+                    <div style="max-height: 180px; overflow-y: auto;">
+                        <ul class="list-group list-group-flush small">
+                            {% for s in quadrants.q4 %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-1">
+                                <span><strong>{{ s.student_name }}</strong> ({{ s.register_number }})</span>
+                                <span>Att: <strong class="text-danger">{{ s.attendance_pct }}%</strong> | Marks: <strong class="text-success">{{ s.avg_marks }}</strong></span>
+                            </li>
+                            {% else %}
+                            <li class="list-group-item text-muted">No students currently in this group.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    fetch("{{ url_for('analytics.scatter_api') }}")
+        .then(res => res.json())
+        .then(data => {
+            const ctx = document.getElementById('scatterRegressionChart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        {
+                            label: 'Student Record (Attendance % vs Marks)',
+                            data: data.scatter_points.map(p => ({ x: p.x, y: p.y, name: p.name, reg_no: p.reg_no, dept: p.dept })),
+                            backgroundColor: 'rgba(37, 99, 235, 0.75)',
+                            borderColor: '#1d4ed8',
+                            pointRadius: 6,
+                            pointHoverRadius: 9
+                        },
+                        {
+                            label: `Linear Regression Line (y = ${data.slope}x + ${data.intercept})`,
+                            data: data.regression_line,
+                            type: 'line',
+                            borderColor: '#dc2626',
+                            borderWidth: 2.5,
+                            borderDash: [6, 4],
+                            fill: false,
+                            pointRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            min: 30,
+                            max: 105,
+                            title: {
+                                display: true,
+                                text: 'Attendance Percentage (%)',
+                                font: { weight: 'bold' }
+                            }
+                        },
+                        y: {
+                            min: 20,
+                            max: 105,
+                            title: {
+                                display: true,
+                                text: 'Examination Marks / Total Score (100)',
+                                font: { weight: 'bold' }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    if (context.dataset.type === 'line') {
+                                        return `Regression Trend: ${context.parsed.y} Marks at ${context.parsed.x}% Attendance`;
+                                    }
+                                    const raw = context.raw;
+                                    return `${raw.name} (${raw.reg_no}) [${raw.dept}]: Attendance: ${raw.x}%, Score: ${raw.y}/100`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        });
+});
+</script>
+{% endblock %}
+

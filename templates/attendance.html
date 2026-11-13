@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Daily Attendance Sheet{% endblock %}
+{% block page_title %}Daily Student Attendance Entry{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+    <!-- Course & Date Selection Bar -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('attendance.index') }}" class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label class="form-label small fw-semibold">Select Course / Subject *</label>
+                    <select name="course_id" class="form-select" onchange="this.form.submit()">
+                        {% for c in courses %}
+                        <option value="{{ c.course_id }}" {% if selected_course_id == c.course_id %}selected{% endif %}>
+                            {{ c.course_code }} - {{ c.course_name }} (Sem {{ c.semester }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label small fw-semibold">Attendance Session Date *</label>
+                    <input type="date" name="date" class="form-control" value="{{ selected_date }}" onchange="this.form.submit()">
+                </div>
+
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-outline-primary w-100">
+                        <i class="bi bi-filter me-1"></i> Load Class Sheet
+                    </button>
+                    <a href="{{ url_for('attendance.view_records') }}" class="btn btn-outline-secondary" title="View Past Records">
+                        <i class="bi bi-clock-history"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Attendance Entry Sheet Form -->
+    {% if students %}
+    <form method="POST" action="{{ url_for('attendance.mark_batch') }}">
+        <input type="hidden" name="course_id" value="{{ selected_course_id }}">
+        <input type="hidden" name="attendance_date" value="{{ selected_date }}">
+
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="fw-bold"><i class="bi bi-calendar2-check-fill text-primary me-2"></i>Class Attendance Register</span>
+                    <span class="badge bg-light text-dark border ms-2">{{ students|length }} Enrolled Students</span>
+                    <span class="badge bg-primary-subtle text-primary ms-1">Date: {{ selected_date }}</span>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-success" onclick="markAll(true)">
+                        <i class="bi bi-check-all me-1"></i> Mark All Present
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="markAll(false)">
+                        <i class="bi bi-x me-1"></i> Mark All Absent
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 custom-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;" class="text-center">Status</th>
+                            <th>Register Number</th>
+                            <th>Student Name</th>
+                            <th>Section</th>
+                            <th>Current State</th>
+                            <th>Faculty Remarks</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in students %}
+                        {% set record = attendance_map.get(s.student_id) %}
+                        {% set is_present = (record and record.status == 'Present') or (not record) %}
+                        <tr class="attendance-row">
+                            <td class="text-center">
+                                <input type="hidden" name="student_ids" value="{{ s.student_id }}">
+                                <input class="form-check-input attendance-check" type="checkbox" name="present_ids" value="{{ s.student_id }}" id="chk_{{ s.student_id }}" {% if is_present %}checked{% endif %} onchange="updateRowState(this, 'badge_{{ s.student_id }}')">
+                            </td>
+                            <td><strong class="font-monospace text-primary">{{ s.register_number }}</strong></td>
+                            <td>
+                                <label for="chk_{{ s.student_id }}" class="mb-0 fw-semibold text-dark cursor-pointer">{{ s.name }}</label>
+                            </td>
+                            <td><span class="badge bg-light text-secondary border">{{ s.section }}</span></td>
+                            <td>
+                                <span id="badge_{{ s.student_id }}" class="badge {% if is_present %}bg-success-subtle text-success border border-success-subtle{% else %}bg-danger-subtle text-danger border border-danger-subtle{% endif %} px-2 py-1">
+                                    {% if is_present %}Present{% else %}Absent{% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <input type="text" name="remarks_{{ s.student_id }}" class="form-control form-control-sm" placeholder="e.g. On time, On leave, Sick..." value="{{ record.remarks if record else '' }}">
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card-footer bg-light p-3 d-flex justify-content-between align-items-center">
+                <span class="text-muted small">Checked box = Present. Unchecked box = Absent. Existing records will be safely updated via SQL.</span>
+                <button type="submit" class="btn btn-primary px-4 shadow-sm fw-bold">
+                    <i class="bi bi-save me-1"></i> Save Attendance to Database
+                </button>
+            </div>
+        </div>
+    </form>
+    {% else %}
+    <div class="card p-5 text-center text-muted">
+        <i class="bi bi-mortarboard fs-1 d-block mb-3 text-secondary"></i>
+        <h5>No Students Enrolled in this Course / Semester</h5>
+        <p class="small">Please verify the course or add students for this department in the Student Management module.</p>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updateRowState(checkbox, badgeId) {
+    const badge = document.getElementById(badgeId);
+    if (checkbox.checked) {
+        badge.className = 'badge bg-success-subtle text-success border border-success-subtle px-2 py-1';
+        badge.innerText = 'Present';
+    } else {
+        badge.className = 'badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1';
+        badge.innerText = 'Absent';
+    }
+}
+
+function markAll(status) {
+    const checkboxes = document.querySelectorAll('.attendance-check');
+    checkboxes.forEach(chk => {
+        chk.checked = status;
+        const studentId = chk.value;
+        updateRowState(chk, 'badge_' + studentId);
+    });
+}
+</script>
+{% endblock %}
+

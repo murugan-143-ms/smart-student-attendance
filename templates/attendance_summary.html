@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Attendance Ledger{% endblock %}
+{% block page_title %}Cumulative Student Attendance Ledger{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+
+    <!-- Filters & Actions -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('attendance.summary') }}" class="row g-3 align-items-center">
+                <div class="col-md-5">
+                    <label class="form-label small fw-semibold">Filter by Department</label>
+                    <select name="dept_id" class="form-select">
+                        <option value="">All Departments</option>
+                        {% for d in departments %}
+                        <option value="{{ d.dept_id }}" {% if filter_dept == d.dept_id|string %}selected{% endif %}>
+                            {{ d.dept_name }} ({{ d.dept_code }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small fw-semibold">Attendance Eligibility Threshold</label>
+                    <select name="status" class="form-select">
+                        <option value="">All Students</option>
+                        <option value="low" {% if filter_status == 'low' %}selected{% endif %}>Low Attendance Detained (< 75%)</option>
+                        <option value="eligible" {% if filter_status == 'eligible' %}selected{% endif %}>Exam Eligible (>= 75%)</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex gap-2 align-self-end">
+                    <button type="submit" class="btn btn-primary flex-grow-1">Filter Ledger</button>
+                    <a href="{{ url_for('attendance.summary') }}" class="btn btn-outline-secondary">Reset</a>
+                    <a href="{{ url_for('reports.export_csv') }}" class="btn btn-outline-success" title="Download CSV Export">
+                        <i class="bi bi-file-earmark-excel"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Attendance Ledger Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span class="fw-bold"><i class="bi bi-journal-text me-2 text-primary"></i>Student Cumulative Attendance Records</span>
+            <span class="badge bg-light text-dark border">{{ summary_list|length }} Students</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 custom-table">
+                <thead>
+                    <tr>
+                        <th>Register No</th>
+                        <th>Student Name</th>
+                        <th>Dept</th>
+                        <th>Total Classes</th>
+                        <th>Attended</th>
+                        <th>Absent</th>
+                        <th>Attendance %</th>
+                        <th>Eligibility Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in summary_list %}
+                    <tr>
+                        <td><strong class="font-monospace text-primary">{{ s.register_number }}</strong></td>
+                        <td>{{ s.student_name }}</td>
+                        <td><span class="badge bg-light text-dark border">{{ s.dept_code }}</span></td>
+                        <td><strong>{{ s.total_classes }}</strong></td>
+                        <td><span class="text-success fw-bold">{{ s.present_count }}</span></td>
+                        <td><span class="text-danger fw-bold">{{ s.absent_count }}</span></td>
+                        <td style="min-width: 160px;">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="progress flex-grow-1" style="height: 8px;">
+                                    <div class="progress-bar {% if s.attendance_percentage >= 75 %}bg-success{% else %}bg-danger{% endif %}" style="width: {{ s.attendance_percentage }}%;"></div>
+                                </div>
+                                <span class="fw-bold {% if s.attendance_percentage >= 75 %}text-success{% else %}text-danger{% endif %} small">
+                                    {{ s.attendance_percentage }}%
+                                </span>
+                            </div>
+                        </td>
+                        <td>
+                            {% if s.attendance_percentage >= 75 %}
+                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                    <i class="bi bi-check-circle me-1"></i>Eligible
+                                </span>
+                            {% else %}
+                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">
+                                    <i class="bi bi-shield-exclamation me-1"></i>Detained (< 75%)
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ url_for('students.view_profile', student_id=s.student_id) }}" class="btn btn-sm btn-outline-primary" title="View Full Profile">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="9" class="text-center py-4 text-muted">No attendance summary found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
